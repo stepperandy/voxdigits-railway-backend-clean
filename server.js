@@ -29,22 +29,46 @@ app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
 });
 app.get("/api/twilio/token", (req, res) => {
-  const AccessToken = twilio.jwt.AccessToken;
-  const VoiceGrant = AccessToken.VoiceGrant;
+  try {
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const apiKey = process.env.TWILIO_API_KEY;
+    const apiSecret = process.env.TWILIO_API_SECRET;
+    const appSid = process.env.TWIML_APP_SID;
 
-  const token = new AccessToken(
-    process.env.TWILIO_ACCOUNT_SID,
-    process.env.TWILIO_API_KEY,
-    process.env.TWILIO_API_SECRET,
-    { identity: "user" }
-  );
+    if (!accountSid) {
+      return res.status(500).json({ error: "Missing TWILIO_ACCOUNT_SID" });
+    }
+    if (!apiKey) {
+      return res.status(500).json({ error: "Missing TWILIO_API_KEY" });
+    }
+    if (!apiSecret) {
+      return res.status(500).json({ error: "Missing TWILIO_API_SECRET" });
+    }
+    if (!appSid) {
+      return res.status(500).json({ error: "Missing TWIML_APP_SID" });
+    }
 
-  const voiceGrant = new VoiceGrant({
-    outgoingApplicationSid: process.env.TWIML_APP_SID,
-    incomingAllow: true,
-  });
+    const AccessToken = twilio.jwt.AccessToken;
+    const VoiceGrant = AccessToken.VoiceGrant;
 
-  token.addGrant(voiceGrant);
+    const token = new AccessToken(accountSid, apiKey, apiSecret, {
+      identity: "user"
+    });
 
-  res.send({ token: token.toJwt() });
+    const voiceGrant = new VoiceGrant({
+      outgoingApplicationSid: appSid,
+      incomingAllow: true
+    });
+
+    token.addGrant(voiceGrant);
+
+    return res.json({
+      ok: true,
+      token: token.toJwt()
+    });
+  } catch (err) {
+    return res.status(500).json({
+      error: err.message
+    });
+  }
 });
