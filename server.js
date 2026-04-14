@@ -28,3 +28,23 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
 });
+app.get("/api/twilio/token", (req, res) => {
+  const AccessToken = twilio.jwt.AccessToken;
+  const VoiceGrant = AccessToken.VoiceGrant;
+
+  const token = new AccessToken(
+    process.env.TWILIO_ACCOUNT_SID,
+    process.env.TWILIO_API_KEY,
+    process.env.TWILIO_API_SECRET,
+    { identity: "user" }
+  );
+
+  const voiceGrant = new VoiceGrant({
+    outgoingApplicationSid: process.env.TWIML_APP_SID,
+    incomingAllow: true,
+  });
+
+  token.addGrant(voiceGrant);
+
+  res.send({ token: token.toJwt() });
+});
