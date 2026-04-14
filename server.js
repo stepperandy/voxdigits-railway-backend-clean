@@ -1,36 +1,30 @@
+const express = require("express");
+const cors = require("cors");
 const twilio = require("twilio");
 
-app.get("/api/twilio/token", (req, res) => {
-  try {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const apiKey = process.env.TWILIO_API_KEY;
-    const apiSecret = process.env.TWILIO_API_SECRET;
-    const appSid = process.env.TWILIO_TWIML_APP_SID;
+const app = express(); // ✅ THIS WAS MISSING
 
-    if (!accountSid || !apiKey || !apiSecret || !appSid) {
-      return res.status(500).json({ error: "Missing Twilio environment variables" });
-    }
+app.use(cors());
+app.use(express.json());
 
-    const AccessToken = twilio.jwt.AccessToken;
-    const VoiceGrant = AccessToken.VoiceGrant;
+// Root test
+app.get("/", (req, res) => {
+  res.send("CLEAN BACKEND OK");
+});
 
-    const identity = "user_" + Math.floor(Math.random() * 100000);
+// Voice webhook
+app.post("/api/twilio/voice", (req, res) => {
+  const VoiceResponse = twilio.twiml.VoiceResponse;
+  const response = new VoiceResponse();
 
-    const token = new AccessToken(accountSid, apiKey, apiSecret, { identity });
+  response.say("Welcome to VoxDigits. Your system is working.");
 
-    const voiceGrant = new VoiceGrant({
-      outgoingApplicationSid: appSid,
-      incomingAllow: true
-    });
+  res.type("text/xml");
+  res.send(response.toString());
+});
 
-    token.addGrant(voiceGrant);
-
-    res.json({
-      token: token.toJwt(),
-      identity
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log("Server running on port " + PORT);
 });
